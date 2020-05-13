@@ -41,16 +41,21 @@ int cmd__regex(int argc, const char **argv)
 {
 	const char *pat;
 	const char *str;
-	int flags = 0;
+	int ret, silent = 0, flags = 0;
 	regex_t r;
 	regmatch_t m[1];
+	char errbuf[64];
 
 	if (argc == 2 && !strcmp(argv[1], "--bug"))
 		return test_regex_bug();
 	else if (argc < 3)
 		usage("test-tool regex --bug\n"
-		      "test-tool regex <pattern> <string> [<options>]");
+		      "test-tool regex [--silent] <pattern> <string> [<options>]");
 
+	if (!strcmp(argv[1], "--silent")) {
+		silent = 1;
+		argv++;
+	}
 	argv++;
 	pat = *argv++;
 	str = *argv++;
@@ -67,8 +72,15 @@ int cmd__regex(int argc, const char **argv)
 	}
 	git_setup_gettext();
 
-	if (regcomp(&r, pat, flags))
-		die("failed regcomp() for pattern '%s'", pat);
+	ret = regcomp(&r, pat, flags);
+	if (ret) {
+		if (!silent) {
+			regerror(ret, &r, errbuf, sizeof(errbuf));
+			die("failed regcomp() for pattern '%s' (%s)",
+				pat, errbuf);
+		} else
+			return 1;
+	}
 	if (regexec(&r, str, 1, m, 0))
 		return 1;
 
