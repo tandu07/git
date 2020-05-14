@@ -165,7 +165,7 @@ static int read_one_commit(struct oidset *commits, struct progress *progress,
 static int graph_write(int argc, const char **argv)
 {
 	struct strbuf buf = STRBUF_INIT;
-	struct string_list pack_indexes;
+	struct string_list pack_indexes = STRING_LIST_INIT_NODUP;
 	struct oidset commits = OIDSET_INIT;
 	struct object_directory *odb = NULL;
 	int result = 0;
@@ -235,8 +235,6 @@ static int graph_write(int argc, const char **argv)
 	}
 
 	if (opts.stdin_packs) {
-		string_list_init(&pack_indexes, 0);
-
 		while (strbuf_getline(&buf, stdin) != EOF)
 			string_list_append(&pack_indexes,
 					   strbuf_detach(&buf, NULL));
@@ -264,7 +262,7 @@ static int graph_write(int argc, const char **argv)
 		result = 1;
 
 cleanup:
-	UNLEAK(pack_indexes);
+	string_list_clear(&pack_indexes, 0);
 	strbuf_release(&buf);
 	if (progress)
 		stop_progress(&progress);
